@@ -14,9 +14,8 @@
 		this.settings_id  = options['settings_id'];
 		this.field_id     = options['field_id'];
 
-		this.group_id          = options['group_id'];
-		this.group_field_id    = options['group_field_id'];
-		this.group_field_name  = options['group_field_name'];
+		this.group_id     = options['group_id'];
+		this.group_key    = options['group_key'];
 
 		this.object_id = options['object_id'];
 		this.ajax_url  = options['ajax_url'];
@@ -27,13 +26,14 @@
 		this.dragdrop  = options['dragdrop'];
 
 		this.result    = $(this.container).find('.uploaded ul');
-		this.field     = $(this.container).find('textarea');
+		this.field     = $(this.container).find('.data-holder');
 		this.logs      = $(this.container).find('.logs');
 
-		this.upload_dir = options['upload_dir'];
-		this.custom_path = '#' + this.field_id + '_cpath';
-		this.custom_name = '#' + this.field_id + '_cname';
-		this.fill_field  = options['fill_field'];
+		this.upload_dir   = options['upload_dir'];
+		this.upload_alpha = options['upload_alpha'];
+		this.custom_path  = '#' + this.field_id + '_cpath';
+		this.custom_name  = '#' + this.field_id + '_cname';
+		this.fill_field   = options['fill_field'];
 
 		//console.log(this.plupload);
 
@@ -94,6 +94,14 @@
 			// a file was added in the queue
 			uploader.bind('FilesAdded', function(up, files) {
 
+				if( $this.upload_alpha ) {
+					var title = $('input[name="post_title"]').val().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+					if ( title.length ) {
+						var letter = title.charAt(0);
+						up.settings.multipart_params.upload_alpha = letter;
+					}
+				}
+
 				$this.log(); //clear previous logs
 
 				var hundredmb = 100 * 1024 * 1024,
@@ -148,7 +156,7 @@
 						$this.result.find('li').each(function() {
 							var data = $(this).attr('data-json');
 							data = JSON.parse(data);
-							$this.remove( data['file'] );
+							$this.remove( data );
 						});
 
 						//display result
@@ -207,6 +215,8 @@
 			var $this = this;
 			var field_value = this.field.val();
 
+			//console.log('saveField: ' + field_value);
+
 			$.ajax({
 				url : $this.ajax_url,
 				type : 'post',
@@ -216,8 +226,7 @@
 					settings_id      : $this.settings_id,
 					field_id         : $this.field_id,
 					group_id         : $this.group_id,
-					group_field_id   : $this.group_field_id,
-					group_field_name : $this.group_field_name,
+					group_key        : $this.group_key,
 					object_id        : $this.object_id,
 					field_value      : field_value,
 				},
@@ -290,7 +299,7 @@
 				$this.buildJSON();
 
 				//trigger file remove action
-				$this.remove( data['file'] );
+				$this.remove( data );
 			});
 
 			this.result.on('click', '.cmb2-copy-file-button', function(e) {
@@ -312,7 +321,7 @@
 		/**
 		 * Remeve local or remote file
 		 *
-		 * @param {string} file path to the file
+		 * @param {object} file object
 		 */
 		remove: function( file ) {
 			var $this = this;
@@ -321,19 +330,17 @@
 				url : $this.ajax_url,
 				type : 'post',
 				data : {
-					action : 'plupload_remove_action',
-					_ajax_nonce : $this.nonce,
+					action           : 'plupload_remove_action',
+					_ajax_nonce      : $this.nonce,
 					settings_id      : $this.settings_id,
 					field_id         : $this.field_id,
 					group_id         : $this.group_id,
-					group_field_id   : $this.group_field_id,
-					group_field_name : $this.group_field_name,
+					group_key        : $this.group_key,
 					object_id        : $this.object_id,
-					path             : file,
+					file_object      : file,
 				},
 				success : function( response ) {
-					//console.log(response);
-					//$this.log(response);
+					$this.log(response);
 				}
 			});
 		},
